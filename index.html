@@ -163,10 +163,18 @@
     let existingBikeFacilities = 'https://services.arcgis.com/v400IkDOw1ad7Yad/ArcGIS/rest/services/Existing_Bike_Facilities/FeatureServer/6';
     let programmedBikeFacilities = 'https://services.arcgis.com/v400IkDOw1ad7Yad/ArcGIS/rest/services/Programmed_Bike_Facilities/FeatureServer/6';
     let citrixCycleStations = 'https://services.arcgis.com/v400IkDOw1ad7Yad/arcgis/rest/services/Citrix_Cycle_Stations/FeatureServer/0';
+    let roadsURL = 'https://maps.wakegov.com/arcgis/rest/services/Transportation/Transportation/MapServer/1';
 
     // Create the query string. These are the minimum parameters needed to return valid GeoJSON of a dataset, but addtional parameters could be added to refine the query
     let queryParams = queryString({
         where: "1=1",
+        outSR: 4326,
+        outFields: "*",
+        f: "geojson"
+    }); 
+
+    let roadsQueryParams = queryString({
+        where: "CORP LIKE 'RA' AND SPEED < 25",
         outSR: 4326,
         outFields: "*",
         f: "geojson"
@@ -177,6 +185,7 @@
     let existingBikeFacilitiesQuery = `${existingBikeFacilities}/query?${queryParams}`;
     let programmedBikeFacilitiesQuery = `${programmedBikeFacilities}/query?${queryParams}`;
     let citrixCycleStationsQuery = `${citrixCycleStations}/query?${queryParams}`;
+    let roadsQuery = `${roadsURL}/query?${roadsQueryParams}`;
 
     map.on('load', () => {
         map.addSource('existing-bike-facilities', {
@@ -390,6 +399,22 @@
             'paint': {
                 'circle-color': '#f9423a',
                 'circle-radius': 4,
+            }
+        });
+
+        map.addSource('20-mph-roads', {
+            'type': 'geojson',
+            'data': roadsQuery
+        });
+
+        map.addLayer({
+            'id': '20-mph-roads-layer',
+            'type': 'line',
+            'source': '20-mph-roads',
+            'layout': {},
+            'paint': {
+                'line-color': "pink",
+                'line-width': 1.5
             }
         });
     })
