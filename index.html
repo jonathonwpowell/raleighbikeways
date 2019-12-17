@@ -211,6 +211,23 @@
     let citrixCycleStationsQuery = `${citrixCycleStations}/query?${citrixQuery}`;
 
     map.on('load', () => {
+        map.addSource('slow-roads', {
+            'type': 'geojson',
+            'data': '/compressed_50_slow_roads.geoJSON'
+        });
+
+        map.addLayer({
+            'id': 'slow-roads-layer',
+            'type': 'line',
+            'source': 'slow-roads',
+            'layout': {},
+            'paint': {
+                'line-color': "red",
+                'line-width': 1.5
+            }
+        });
+
+
         map.addSource('existing-bike-facilities', {
             'type': 'geojson',
             'data': existingBikeFacilitiesQuery
