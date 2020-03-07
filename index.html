@@ -177,6 +177,19 @@
                         </svg>
                     </td>
                 </tr>
+                <tr>
+                    <td>
+                        <input id="crash-checkbox" type="checkbox" class="legend-checkbox"
+                            onchange="legendToggleCrashLayer(this.checked)" checked>Bicycle Crash Locations
+                        <i class="material-icons md-18 noselect"
+                            onclick="document.getElementById('crash-info-container').style.display='block'">info</i>
+                    </td>
+                    <td>
+                        <svg height="24" width="24" class="existing-legend">
+                            <circle cx="12" cy="12" r="10" stroke="black" stroke-width="2" fill="yellow" />
+                        </svg>
+                    </td>
+                </tr>
             </table>
             <div id="feedback-button-container">
                 <a href="https://docs.google.com/forms/d/e/1FAIpQLSeROy90gU_08wwKrasKIGHE4b-uOOUdohYK6ClDtKLd4zvQ1Q/viewform?usp=sf_link"
@@ -268,6 +281,19 @@
             <br>
         </div>
     </div>
+	    <div id="crash-info-container" class="modal-container" onclick="this.style.display='none'" style="display: none;">
+        <div id="crash-info" class="modal legend-info" onclick="event.stopPropagation()">
+            <i class=" material-icons md-24 noselect close-button"
+                onclick="document.getElementById('crash-info-container').style.display='none'">close</i>
+            <div id="about">
+                <div class="legend-info-title">Bicycle Crash Points</div>
+                <span>
+                    Locations of crashes recorded by NC.DOT
+                </span>
+            </div>
+            <br>
+        </div>
+    </div>
     <div id="map-style-container" class="modal-container" onclick="this.style.display='none'" style="display: none;">
         <div id="map-style-selection" class="modal legend-info" onclick="event.stopPropagation()">
             <i class=" material-icons md-24 noselect close-button"
@@ -343,6 +369,7 @@
         MINGO_GREENWAY_NAMES: 'mingo-greenway-names-layer',
         SMITH_GREENWAY_NAMES: 'smith-greenway-names-layer',
         CH_CARR_FACILITIES_DASHED: 'chapel-hill-carrboro-facilities-dashed',
+		CRASH: 'crash-layer'
 
     }
 
@@ -361,6 +388,7 @@
         SMITH_GREENWAY: 'smith-greenway',
         CH_CARRBORO: 'chapel-hill-carrboro',
         OSM: 'osm-data',
+		CRASH: 'crash-data'
     }
 
     // Custom styling for the direction line
@@ -506,6 +534,7 @@
     let programmedBikeFacilities = 'https://services.arcgis.com/v400IkDOw1ad7Yad/ArcGIS/rest/services/Programmed_Bike_Facilities/FeatureServer/6';
     let citrixCycleStations = 'https://services.arcgis.com/v400IkDOw1ad7Yad/arcgis/rest/services/Citrix_Cycle_Stations/FeatureServer/0';
     let durhamURL = 'https://webgis.durhamnc.gov/server/rest/services/OpenData/Bike_Facilities/MapServer/0';
+	let crashURL = 'https://gis11.services.ncdot.gov/arcgis/rest/services/NCDOT_BikePedCrash/MapServer/1';
 
     // Create the query string. These are the minimum parameters needed to return valid GeoJSON of a dataset, but addtional parameters could be added to refine the query
     let queryParams = queryString({
@@ -521,6 +550,17 @@
         outFields: "*",
         f: "geojson"
     });
+// 35.927195,-78.8566737,35.8437476,-78.7150955   --- 35.684334, -78.509886  36.193794, -79.339302   35.457438, -78.209557
+    let crashQueryParams = queryString({
+        where: "1=1",		
+		geometry: "-79.339302,36.193794,-78.209557,35.457438",
+		geometryType: "esriGeometryEnvelope",
+		inSR: 4326,
+        outSR: 4326,
+        outFields: "*",
+        f: "geojson"
+    });
+
 
     // We split up solid & dashed for durham as otherwise we would be close to the ARCGIS 1000 item limit
     let durhamSolidQueryParams = queryString({
@@ -543,6 +583,7 @@
     let durhamDashedQuery = 'data/durham_shared.geojson';
     let chCarrboroQuery = 'https://gist.githubusercontent.com/jonathonwpowell/23679b5c11f8108bc1aecad157475a8f/raw/ch-carrboro-bike-facilities.geojson';
     let osmQuery = 'https://raw.githubusercontent.com/oaksandspokes/bikeOsmExport/master/bikeInfra.geojson';
+	let crashQuery = `${crashURL}/query?${crashQueryParams}`;
 
 
     map.on('style.load', () => {
@@ -646,6 +687,12 @@
             'type': 'geojson',
             'data': chCarrboroQuery
         });
+
+        map.addSource(sources.CRASH, {
+            'type': 'geojson',
+            'data': crashQuery
+        });
+
     }
 
     function addMapLayers() {
@@ -922,6 +969,17 @@
                 'text-halo-color': 'black',
             },
         });
+		
+		map.addLayer({
+            'id': layers.CRASH,
+            'type': 'circle',
+            'source': sources.CRASH,
+            'layout': {},
+            'paint': {
+                'circle-color': 'Yellow',
+                'circle-radius': 4,
+            }
+        });
     }
 
     function legendToggleGreenwayLayer(isChecked) {
@@ -976,6 +1034,13 @@
         setCookie("hideCitrix", (!isChecked).toString(), 1000);
 
         setVisibilityProperty(layers.CITRIX, visibilityState);
+    }
+
+    function legendToggleCrashLayer(isChecked) {
+        var visibilityState = isChecked ? 'visible' : 'none';
+        setCookie("hideCrash", (!isChecked).toString(), 1000);
+
+        setVisibilityProperty(layers.CRASH, visibilityState);
     }
 
     function setVisibilityProperty(layer, isVisible) {
